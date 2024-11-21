@@ -7,7 +7,7 @@ Create a RESTful API using Python that manages flight reservations. The API shou
 
 ### 1. Technology Stack
 - Use a modern Python web framework.
-- Preferably utilize technical stack mentioned in Job posting.
+- Preferably utilize technical stack mentioned in [Job posting](https://jobs.kiwi.com/jobs/python-engineer-autobooking-2/).
 - Usage of AI based assistant is permitted and encouraged, but own your code.
 - Prepare your application to run in an isolated, containerized environment suitable for deployment across various systems.
 
