@@ -1,14 +1,15 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, EmailStr
+from functools import wraps
 from datetime import datetime
 from typing import List
-import uuid
+import uvicorn
 
 app = FastAPI()
 
 
 class PassengerInfo(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="Automatically generated reservation ID")
+    id: int = Field(default=None)
     full_name: str = Field(..., min_length=3, max_length=100, description="Full name of the passenger")
     email: EmailStr = Field(..., description="Email address of the passenger")
     phone_number: str = Field(..., min_length=10, max_length=15, description="Phone number of the passenger")
@@ -26,7 +27,7 @@ class FlightDetails(BaseModel):
 
 
 class Reservation(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="Automatically generated reservation ID")
+    id: int = Field(default=None)
     passenger_info: PassengerInfo
     flight_details: FlightDetails
     total_price: float = Field(..., gt=0, description="Total price of the reservation")
@@ -38,11 +39,27 @@ class Reservation(BaseModel):
 reservations = []
 
 
+def update_id():
+    curr_id = len(reservations)
+    reservations[-1].id = curr_id
+
+
+def post_decorator(func):
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        res: Reservation = await func(*args, **kwargs)
+        if not res.id:
+            update_id()
+        return res
+    return wrapper
+
+
 @app.post("/reservations", response_model=Reservation)
+@post_decorator
 async def create_reservation(reservation: Reservation):
     for existing_reservation in reservations:
-        if existing_reservation.id == reservation.id:
-            raise HTTPException(status_code=400, detail="Reservation with this ID already exists.")
+        if existing_reservation.passenger_info.id == reservation.passenger_info.id:
+            raise HTTPException(status_code=400, detail="Reservation for this passenger already exists.")
     reservations.append(reservation)
     return reservation
 
@@ -65,6 +82,8 @@ async def update_reservation(reservation_id: int, updated_reservation: Reservati
     for index, reservation in enumerate(reservations):
         if reservation.id == reservation_id:
             reservations[index] = updated_reservation
+            if not updated_reservation.id:
+                reservations[index].id = reservation_id
             return updated_reservation
     raise HTTPException(status_code=404, detail="Reservation not found.")
 
@@ -76,3 +95,7 @@ async def delete_reservation(reservation_id: int):
             reservations.pop(index)
             return {"message": "Reservation deleted successfully."}
     raise HTTPException(status_code=404, detail="Reservation not found.")
+
+
+if __name__ == '__main__':
+    uvicorn.run(app, host="127.0.0.1", port=8000)
