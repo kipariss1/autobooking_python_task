@@ -14,6 +14,8 @@ class PassengerInfo(BaseModel):
     email: EmailStr = Field(..., description="Email address of the passenger")
     phone_number: str = Field(..., min_length=10, max_length=15, description="Phone number of the passenger")
 
+    # TODO: implement full_name, email and phone_number validation
+
 
 class FlightDetails(BaseModel):
     flight_number: str = Field(..., min_length=3, max_length=10, description="Flight number")
@@ -22,6 +24,7 @@ class FlightDetails(BaseModel):
     destination_airport: str = Field(..., min_length=3, max_length=50, description="Destination airport code or name")
     departure_datetime: datetime = Field(..., description="Departure date and time")
     arrival_datetime: datetime = Field(..., description="Arrival date and time")
+    # TODO: add here regex for checking seat pattern
     seat_information: str = Field(..., min_length=1, max_length=5, description="Seat number")
     travel_class: str = Field(..., pattern="^(economy|business|first)$", description="Class of travel")
 
@@ -45,7 +48,7 @@ class Reservation(BaseModel):
 
     @model_validator(mode='before')
     @classmethod
-    def create_or_update_with_timestamp(cls, values):
+    def add_timestamp(cls, values):
         if 'creation_timestamp' in values.keys() or 'last_update_timestamp' in values.keys():
             raise Exception('creation timestamp and last update timestamp cant be in the request!')
         values['creation_timestamp'] = values['last_update_timestamp'] = datetime.now()
