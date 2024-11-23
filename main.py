@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, EmailStr, model_validator
 from functools import wraps
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 import uvicorn
 
 app = FastAPI()
