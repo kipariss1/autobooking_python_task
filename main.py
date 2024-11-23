@@ -21,7 +21,6 @@ def save_reservation(reservation: Reservation, reservation_id: int = None):
                 raise HTTPException(status_code=400, detail="Reservation for this passenger already exists.")
         reservations.append(reservation)
         update_id()
-
     else:                   # PUT
         for index, old_reservation in enumerate(reservations):
             if old_reservation.id == reservation_id:
