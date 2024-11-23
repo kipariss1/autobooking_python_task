@@ -26,7 +26,7 @@ class PassengerInfo(BaseModel):
     @field_validator("phone_number")
     @classmethod
     def validate_phone_number(cls, value):
-        if not re.match(r"^\+?[0-9]{10,15}$", value):
+        if not re.match(r"^\+?[0-9]{9,15}$", value):
             raise ValueError("Phone number must contain only digits and may include an optional '+' prefix.")
         return value.strip()
 
@@ -38,8 +38,7 @@ class FlightDetails(BaseModel):
     destination_airport: str = Field(..., min_length=3, max_length=50, description="Destination airport code or name")
     departure_datetime: datetime = Field(..., description="Departure date and time")
     arrival_datetime: datetime = Field(..., description="Arrival date and time")
-    # TODO: add here regex for checking seat pattern
-    seat_information: str = Field(..., min_length=1, max_length=5, description="Seat number")
+    seat_information: str = Field(..., pattern="^[A-Z]{1}[0-9]{1,2}$", description="Seat number")
     travel_class: str = Field(..., pattern="^(economy|business|first)$", description="Class of travel")
 
 
