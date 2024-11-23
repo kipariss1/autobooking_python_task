@@ -33,7 +33,7 @@ class FlightDetails(BaseModel):
     destination_airport: str = Field(..., min_length=3, max_length=50, description="Destination airport code or name")
     departure_datetime: datetime = Field(..., description="Departure date and time")
     arrival_datetime: datetime = Field(..., description="Arrival date and time")
-    seat_information: str = Field(..., pattern="^[A-Z]{1}[0-9]{1,2}$", description="Seat number")
+    seat_information: str = Field(..., pattern="^[0-9]{1,2}[A-Z]{1}$", description="Seat number")
     travel_class: str = Field(..., pattern="^(economy|business|first)$", description="Class of travel")
 
 
