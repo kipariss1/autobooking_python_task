@@ -35,6 +35,14 @@ class Reservation(BaseModel):
     creation_timestamp: datetime = Field(description="Timestamp when the reservation was created")
     last_update_timestamp: datetime = Field(description="Timestamp when the reservation was last updated")
 
+    def __eq__(self, other):
+        if not isinstance(other, Reservation):
+            raise NotImplemented('Cannot compare Reservation objects to objects with other datatype')
+        return (
+            self.flight_details.flight_number == other.flight_details.flight_number and
+            self.passenger_info.id == other.passenger_info.id
+        )
+
     @model_validator(mode='before')
     @classmethod
     def create_or_update_with_timestamp(cls, values):
@@ -66,8 +74,7 @@ def post_decorator(func):
 @app.post("/reservations", response_model=Reservation)
 async def create_reservation(reservation: Reservation):
     for existing_reservation in reservations:
-        # TODO: check here id of the passenger and number of flight instead of just checking the id
-        if existing_reservation.passenger_info.id == reservation.passenger_info.id:
+        if existing_reservation == reservation:
             raise HTTPException(status_code=400, detail="Reservation for this passenger already exists.")
     reservations.append(reservation)
     update_id()
@@ -92,10 +99,10 @@ async def update_reservation(reservation_id: int, updated_reservation: Reservati
     for index, reservation in enumerate(reservations):
         if reservation.id == reservation_id:
             orig_creation_timestamp = reservations[index].creation_timestamp
+            updated_reservation.id = reservation_id
+            updated_reservation.creation_timestamp = orig_creation_timestamp
             reservations[index] = updated_reservation
-            reservations[index].id = reservation_id
-            reservations[index].creation_timestamp = orig_creation_timestamp
-            return updated_reservation
+            return reservations[index]
     raise HTTPException(status_code=404, detail="Reservation not found.")
 
 
