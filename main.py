@@ -2,6 +2,9 @@ from fastapi import FastAPI, HTTPException
 from validation_models import Reservation
 from typing import List
 import uvicorn
+from sqlalchemy.orm import Session
+import models
+from database import db
 
 app = FastAPI()
 
@@ -15,12 +18,18 @@ def update_id():
 
 
 def save_reservation(reservation: Reservation, reservation_id: int = None):
+    existing_reservations = db.query(models.Reservation).all()
     if not reservation_id:  # POST
-        for existing_reservation in reservations:
+        # TODO: redo this for sqlalchemy
+        for existing_reservation in existing_reservations:
             if existing_reservation == reservation:
                 raise HTTPException(status_code=400, detail="Reservation for this passenger already exists.")
-        reservations.append(reservation)
+        db_reservation = models.Reservation(**reservation.dict())
+        db.add(db_reservation)
+        db.commit()
+        db.refresh(db_reservation)
         update_id()
+        return reservation
     else:                   # PUT
         for index, old_reservation in enumerate(reservations):
             if old_reservation.id == reservation_id:
