@@ -1,8 +1,8 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, model_validator
 from functools import wraps
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 import uvicorn
 
 app = FastAPI()
@@ -35,8 +35,16 @@ class Reservation(BaseModel):
     creation_timestamp: datetime = Field(description="Timestamp when the reservation was created")
     last_update_timestamp: datetime = Field(description="Timestamp when the reservation was last updated")
 
+    @model_validator(mode='before')
+    @classmethod
+    def create_or_update_with_timestamp(cls, values):
+        if 'creation_timestamp' in values.keys() or 'last_update_timestamp' in values.keys():
+            raise Exception('creation timestamp and last update timestamp cant be in the request!')
+        values['creation_timestamp'] = values['last_update_timestamp'] = datetime.now()
+        return values
 
-reservations = []
+
+reservations: List[Reservation] = []
 
 
 def update_id():
@@ -44,6 +52,7 @@ def update_id():
     reservations[-1].id = curr_id
 
 
+# TODO: unify decorator for POST and for PUT
 def post_decorator(func):
     @wraps(func)
     async def wrapper(*args, **kwargs):
@@ -55,12 +64,13 @@ def post_decorator(func):
 
 
 @app.post("/reservations", response_model=Reservation)
-@post_decorator
 async def create_reservation(reservation: Reservation):
     for existing_reservation in reservations:
+        # TODO: check here id of the passenger and number of flight instead of just checking the id
         if existing_reservation.passenger_info.id == reservation.passenger_info.id:
             raise HTTPException(status_code=400, detail="Reservation for this passenger already exists.")
     reservations.append(reservation)
+    update_id()
     return reservation
 
 
@@ -81,9 +91,10 @@ async def get_reservation_by_id(reservation_id: int):
 async def update_reservation(reservation_id: int, updated_reservation: Reservation):
     for index, reservation in enumerate(reservations):
         if reservation.id == reservation_id:
+            orig_creation_timestamp = reservations[index].creation_timestamp
             reservations[index] = updated_reservation
-            if not updated_reservation.id:
-                reservations[index].id = reservation_id
+            reservations[index].id = reservation_id
+            reservations[index].creation_timestamp = orig_creation_timestamp
             return updated_reservation
     raise HTTPException(status_code=404, detail="Reservation not found.")
 
