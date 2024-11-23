@@ -60,25 +60,28 @@ def update_id():
     reservations[-1].id = curr_id
 
 
-# TODO: unify decorator for POST and for PUT
-def post_decorator(func):
-    @wraps(func)
-    async def wrapper(*args, **kwargs):
-        res: Reservation = await func(*args, **kwargs)
-        if not res.id:
-            update_id()
-        return res
-    return wrapper
+def save_reservation(reservation: Reservation, reservation_id: int = None):
+    if not reservation_id:  # POST
+        for existing_reservation in reservations:
+            if existing_reservation == reservation:
+                raise HTTPException(status_code=400, detail="Reservation for this passenger already exists.")
+        reservations.append(reservation)
+        update_id()
+    else:                   # PUT
+        for index, old_reservation in enumerate(reservations):
+            if old_reservation.id == reservation_id:
+                orig_creation_timestamp = reservations[index].creation_timestamp
+                reservation.id = reservation_id
+                reservation.creation_timestamp = orig_creation_timestamp
+                reservations[index] = reservation
+                return reservations[index]
+        raise HTTPException(status_code=404, detail="Reservation not found.")
+    return reservation
 
 
 @app.post("/reservations", response_model=Reservation)
 async def create_reservation(reservation: Reservation):
-    for existing_reservation in reservations:
-        if existing_reservation == reservation:
-            raise HTTPException(status_code=400, detail="Reservation for this passenger already exists.")
-    reservations.append(reservation)
-    update_id()
-    return reservation
+    return save_reservation(reservation)
 
 
 @app.get("/reservations", response_model=List[Reservation])
@@ -96,14 +99,7 @@ async def get_reservation_by_id(reservation_id: int):
 
 @app.put("/reservations/{reservation_id}", response_model=Reservation)
 async def update_reservation(reservation_id: int, updated_reservation: Reservation):
-    for index, reservation in enumerate(reservations):
-        if reservation.id == reservation_id:
-            orig_creation_timestamp = reservations[index].creation_timestamp
-            updated_reservation.id = reservation_id
-            updated_reservation.creation_timestamp = orig_creation_timestamp
-            reservations[index] = updated_reservation
-            return reservations[index]
-    raise HTTPException(status_code=404, detail="Reservation not found.")
+    return save_reservation(updated_reservation, reservation_id)
 
 
 @app.delete("/reservations/{reservation_id}", response_model=dict)
