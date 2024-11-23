@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field, EmailStr, model_validator
-from functools import wraps
+from pydantic import BaseModel, Field, EmailStr, model_validator, field_validator
+import re
 from datetime import datetime
 from typing import List
 import uvicorn
@@ -14,7 +14,21 @@ class PassengerInfo(BaseModel):
     email: EmailStr = Field(..., description="Email address of the passenger")
     phone_number: str = Field(..., min_length=10, max_length=15, description="Phone number of the passenger")
 
-    # TODO: implement full_name, email and phone_number validation
+    @field_validator("full_name")
+    @classmethod
+    def validate_full_name(cls, value):
+        if not re.match(r"^[a-zA-Z\s'-]+$", value):
+            raise ValueError("Full name must contain only letters, spaces, hyphens, or apostrophes.")
+        if len(value.split()) < 2:
+            raise ValueError("Full name must include at least a first and last name.")
+        return value.strip()
+
+    @field_validator("phone_number")
+    @classmethod
+    def validate_phone_number(cls, value):
+        if not re.match(r"^\+?[0-9]{10,15}$", value):
+            raise ValueError("Phone number must contain only digits and may include an optional '+' prefix.")
+        return value.strip()
 
 
 class FlightDetails(BaseModel):
