@@ -10,35 +10,30 @@ from sqlalchemy.exc import IntegrityError
 app = FastAPI()
 
 
+def _check_and_create(model, model_attr: str, new_resrvtn, new_attr: str, new_attr_id: str, db: Session):
+    db_obj = db.query(model).filter(
+        getattr(model, model_attr) == getattr(getattr(new_resrvtn, new_attr), new_attr_id)
+    ).first()
+    if not db_obj:
+        db_obj = model(**getattr(new_resrvtn, new_attr).dict())
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+    return db_obj
+
+
 @app.post("/reservations")
 async def create_reservation(reservation: schemas.Reservation, db: Session = Depends(get_db)):
     existing_reservation = db.query(models.Reservation).join(models.FlightDetails).filter(
         models.Reservation.passenger_info_id == reservation.passenger_info.id,
         models.FlightDetails.flight_number == reservation.flight_details.flight_number
     ).first()
-
     if existing_reservation:
         raise HTTPException(status_code=400, detail="Reservation already exists for this passenger and flight.")
-
-    passenger = db.query(models.PassengerInfo).filter(
-        models.PassengerInfo.id == reservation.passenger_info.id
-    ).first()
-    if not passenger:
-        passenger = models.PassengerInfo(**reservation.passenger_info.dict())
-        db.add(passenger)
-        db.commit()
-        db.refresh(passenger)
-
-    # Create FlightDetails record if not already present
-    flight = db.query(models.FlightDetails).filter(
-        models.FlightDetails.flight_number == reservation.flight_details.flight_number
-    ).first()
-    if not flight:
-        flight = models.FlightDetails(**reservation.flight_details.dict())
-        db.add(flight)
-        db.commit()
-        db.refresh(flight)
-
+    passenger = _check_and_create(models.PassengerInfo, 'id', reservation, 'passenger_info', 'id', db)
+    flight = _check_and_create(
+        models.FlightDetails, 'flight_number', reservation, 'flight_details', 'flight_number', db
+    )
     # Create a new Reservation record
     new_reservation = models.Reservation(
         total_price=reservation.total_price,
@@ -90,10 +85,8 @@ async def update_reservation(
         db: Session = Depends(get_db)
 ):
     old_reservation = db.query(models.Reservation).filter(models.Reservation.id == reservation_id).first()
-
     if not old_reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")
-
     # Update PassengerInfo
     _check_and_update(
         models.PassengerInfo, 'id', old_reservation, 'passenger_info_id', reservation, 'passenger_info', db
