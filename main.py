@@ -1,10 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from validation_models import Reservation
 from typing import List
 import uvicorn
 from sqlalchemy.orm import Session
 import models
-from database import db
+from database import get_db
 
 app = FastAPI()
 
@@ -17,7 +17,7 @@ def update_id():
     reservations[-1].id = curr_id
 
 
-def save_reservation(reservation: Reservation, reservation_id: int = None):
+def save_reservation(db: Session, reservation: Reservation, reservation_id: int = None):
     existing_reservations = db.query(models.Reservation).all()
     if not reservation_id:  # POST
         # TODO: redo this for sqlalchemy
@@ -43,8 +43,8 @@ def save_reservation(reservation: Reservation, reservation_id: int = None):
 
 
 @app.post("/reservations", response_model=Reservation)
-async def create_reservation(reservation: Reservation):
-    return save_reservation(reservation)
+async def create_reservation(reservation: Reservation, db: Session = Depends(get_db)):
+    return save_reservation(db, reservation)
 
 
 @app.get("/reservations", response_model=List[Reservation])
@@ -61,8 +61,8 @@ async def get_reservation_by_id(reservation_id: int):
 
 
 @app.put("/reservations/{reservation_id}", response_model=Reservation)
-async def update_reservation(reservation_id: int, updated_reservation: Reservation):
-    return save_reservation(updated_reservation, reservation_id)
+async def update_reservation(reservation_id: int, updated_reservation: Reservation, db: Session = Depends(get_db)):
+    return save_reservation(db, updated_reservation, reservation_id)
 
 
 @app.delete("/reservations/{reservation_id}", response_model=dict)

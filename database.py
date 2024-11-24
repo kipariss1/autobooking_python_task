@@ -10,3 +10,11 @@ SessionLocal = sessionmaker(bind=engine)
 Base.metadata.create_all(bind=engine)
 
 db = SessionLocal()
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        return db
+    finally:
+        db.close()
