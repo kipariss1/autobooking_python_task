@@ -14,6 +14,9 @@ class PassengerInfo(Base):
     email = Column(String(100), unique=True, nullable=False)
     phone_number = Column(String(15), nullable=False)
 
+    def __str__(self):
+        return self.__tablename__
+
 
 class FlightDetails(Base):
     __tablename__ = 'flight_details'
@@ -27,6 +30,9 @@ class FlightDetails(Base):
     arrival_datetime = Column(DateTime, nullable=False)
     seat_information = Column(String(5), nullable=False)
     travel_class = Column(String(10), nullable=False)
+
+    def __str__(self):
+        return self.__tablename__
 
 
 class Reservation(Base):
@@ -43,3 +49,6 @@ class Reservation(Base):
 
     passenger_info = relationship("PassengerInfo", backref="reservations")
     flight_details = relationship("FlightDetails", backref="reservations")
+
+    def __str__(self):
+        return self.__tablename__
