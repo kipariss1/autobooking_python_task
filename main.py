@@ -85,7 +85,7 @@ def save_reservation(db: Session, reservation: schemas.Reservation, reservation_
 
         # Update Reservation fields
         for attr, value in reservation.model_dump().items():
-            if attr not in ("passenger_info", "flight_details"):
+            if attr not in ("passenger_info", "flight_details", "id"):
                 setattr(old_reservation, attr, value)
 
         # Update the timestamps
