@@ -25,6 +25,9 @@ class PassengerInfo(BaseModel):
             raise ValueError("Phone number must contain only digits and may include an optional '+' prefix.")
         return value.strip()
 
+    class Config:
+        from_attributes = True
+
 
 class FlightDetails(BaseModel):
     flight_number: str = Field(..., min_length=3, max_length=10, description="Flight number")
@@ -36,8 +39,12 @@ class FlightDetails(BaseModel):
     seat_information: str = Field(..., pattern="^[0-9]{1,2}[A-Z]{1}$", description="Seat number")
     travel_class: str = Field(..., pattern="^(economy|business|first)$", description="Class of travel")
 
+    class Config:
+        from_attributes = True
+
 
 class Reservation(BaseModel):
+
     id: int = Field(default=None)
     passenger_info: PassengerInfo
     flight_details: FlightDetails
@@ -61,3 +68,6 @@ class Reservation(BaseModel):
             raise Exception('creation timestamp and last update timestamp cant be in the request!')
         values['creation_timestamp'] = values['last_update_timestamp'] = datetime.now()
         return values
+
+    class Config:
+        from_attributes = True

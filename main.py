@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends
-from validation_models import Reservation
+from schemas import Reservation
 from typing import List
 import uvicorn
 from sqlalchemy.orm import Session
@@ -18,11 +18,12 @@ def update_id():
     reservations[-1].id = curr_id
 
 
+
 def save_reservation(db: Session, reservation: Reservation, reservation_id: int = None):
     if not reservation_id:  # POST
-        existing_reservation = db.query(Reservation).filter(
+        existing_reservation = db.query(models.Reservation).join(models.FlightDetails).filter(
             models.Reservation.passenger_info_id == reservation.passenger_info.id,
-            models.Reservation.flight_details_id == reservation.flight_details.id
+            models.FlightDetails.flight_number == reservation.flight_details.flight_number
         ).first()
 
         if existing_reservation:

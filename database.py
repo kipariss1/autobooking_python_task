@@ -1,6 +1,7 @@
 import sqlalchemy as sa
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 from models import Base
+import models
 
 
 DB_URL = "sqlite:///./local.db"
@@ -13,8 +14,8 @@ db = SessionLocal()
 
 
 def get_db():
-    db = SessionLocal()
+    db_inst = SessionLocal()
     try:
-        return db
+        return db_inst
     finally:
-        db.close()
+        db_inst.close()
