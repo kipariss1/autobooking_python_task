@@ -48,7 +48,6 @@ def save_reservation(db: Session, reservation: schemas.Reservation, reservation_
         db.refresh(new_reservation)
         db.refresh(new_reservation.flight_details)
         db.refresh(new_reservation.passenger_info)
-
         return schemas.ReservationOut.model_validate(new_reservation)
     else:                   # PUT
         pass

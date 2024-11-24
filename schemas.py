@@ -46,28 +46,10 @@ class FlightDetails(BaseModel):
 class Reservation(BaseModel):
 
     id: int = Field(default=None)
-    passenger_info: PassengerInfo
-    flight_details: FlightDetails
+    passenger_info: PassengerInfo = Field(...)
+    flight_details: FlightDetails = Field(...)
     total_price: float = Field(..., gt=0, description="Total price of the reservation")
     reservation_status: str = Field(..., pattern="^(confirmed|pending|cancelled)$", description="Status of the reservation")
-    creation_timestamp: datetime = Field(description="Timestamp when the reservation was created")
-    last_update_timestamp: datetime = Field(description="Timestamp when the reservation was last updated")
-
-    def __eq__(self, other):
-        if not isinstance(other, Reservation):
-            raise NotImplemented('Cannot compare Reservation objects to objects with other datatype')
-        return (
-            self.flight_details.flight_number == other.flight_details.flight_number and
-            self.passenger_info.id == other.passenger_info.id
-        )
-
-    @model_validator(mode='before')
-    @classmethod
-    def add_timestamp(cls, values):
-        if 'creation_timestamp' in values.keys() or 'last_update_timestamp' in values.keys():
-            raise Exception('creation timestamp and last update timestamp cant be in the request!')
-        values['creation_timestamp'] = values['last_update_timestamp'] = datetime.now()
-        return values
 
     class Config:
         from_attributes = True
@@ -78,6 +60,8 @@ class ReservationOut(BaseModel):
     id: int = Field(default=None)
     passenger_info_id: int
     flight_details_id: int
+    passenger_info: PassengerInfo = Field(...)
+    flight_details: FlightDetails = Field(...)
     total_price: float = Field(..., gt=0, description="Total price of the reservation")
     reservation_status: str = Field(..., pattern="^(confirmed|pending|cancelled)$", description="Status of the reservation")
     creation_timestamp: datetime = Field(description="Timestamp when the reservation was created")
