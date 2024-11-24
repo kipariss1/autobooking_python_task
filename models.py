@@ -40,8 +40,8 @@ class Reservation(Base):
     id = Column(Integer, primary_key=True, index=True)
     total_price = Column(Float, nullable=False)
     reservation_status = Column(String(20), nullable=False)  # confirmed, pending, cancelled
-    creation_timestamp = Column(DateTime, default=datetime.utcnow)
-    last_update_timestamp = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    creation_timestamp = Column(DateTime, default=datetime.now)
+    last_update_timestamp = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     passenger_info_id = Column(Integer, ForeignKey('passenger_info.id'), nullable=False)
     flight_details_id = Column(Integer, ForeignKey('flight_details.id'), nullable=False)

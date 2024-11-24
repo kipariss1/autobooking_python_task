@@ -5,6 +5,7 @@ import uvicorn
 from sqlalchemy.orm import Session
 import models
 from database import get_db
+from datetime import datetime
 
 app = FastAPI()
 
@@ -18,18 +19,45 @@ def update_id():
 
 
 def save_reservation(db: Session, reservation: Reservation, reservation_id: int = None):
-    existing_reservations = db.query(models.Reservation).all()
     if not reservation_id:  # POST
-        # TODO: redo this for sqlalchemy
-        for existing_reservation in existing_reservations:
-            if existing_reservation == reservation:
-                raise HTTPException(status_code=400, detail="Reservation for this passenger already exists.")
-        db_reservation = models.Reservation(**reservation.dict())
-        db.add(db_reservation)
+        existing_reservation = db.query(Reservation).filter(
+            models.Reservation.passenger_info_id == reservation.passenger_info.id,
+            models.Reservation.flight_details_id == reservation.flight_details.id
+        ).first()
+
+        if existing_reservation:
+            raise HTTPException(status_code=400, detail="Reservation already exists for this passenger and flight.")
+        passenger = db.query(models.PassengerInfo).filter(
+            models.PassengerInfo.id == reservation.passenger_info.id
+        ).first()
+        if not passenger:
+            passenger = models.PassengerInfo(**reservation.passenger_info.dict())
+            db.add(passenger)
+            db.commit()
+            db.refresh(passenger)
+
+        # Create FlightDetails record if not already present
+        flight = db.query(models.FlightDetails).filter(
+            models.FlightDetails.flight_number == reservation.flight_details.flight_number
+        ).first()
+        if not flight:
+            flight = models.FlightDetails(**reservation.flight_details.dict())
+            db.add(flight)
+            db.commit()
+            db.refresh(flight)
+
+        # Create a new Reservation record
+        new_reservation = models.Reservation(
+            total_price=reservation.total_price,
+            reservation_status=reservation.reservation_status,
+            passenger_info_id=passenger.id,
+            flight_details_id=flight.id
+        )
+        db.add(new_reservation)
         db.commit()
-        db.refresh(db_reservation)
-        update_id()
-        return reservation
+        db.refresh(new_reservation)
+
+        return new_reservation
     else:                   # PUT
         for index, old_reservation in enumerate(reservations):
             if old_reservation.id == reservation_id:
@@ -39,7 +67,6 @@ def save_reservation(db: Session, reservation: Reservation, reservation_id: int 
                 reservations[index] = reservation
                 return reservations[index]
         raise HTTPException(status_code=404, detail="Reservation not found.")
-    return reservation
 
 
 @app.post("/reservations", response_model=Reservation)
