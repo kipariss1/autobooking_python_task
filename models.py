@@ -14,8 +14,6 @@ class PassengerInfo(Base):
     email = Column(String(100), unique=True, nullable=False)
     phone_number = Column(String(15), nullable=False)
 
-    reservations = relationship("Reservation", back_populates="passenger_info")
-
 
 class FlightDetails(Base):
     __tablename__ = 'flight_details'
@@ -30,9 +28,6 @@ class FlightDetails(Base):
     seat_information = Column(String(5), nullable=False)
     travel_class = Column(String(10), nullable=False)
 
-    # Relationship to Reservation
-    reservations = relationship("Reservation", back_populates="flight_details")
-
 
 class Reservation(Base):
     __tablename__ = 'reservations'
@@ -46,5 +41,5 @@ class Reservation(Base):
     passenger_info_id = Column(Integer, ForeignKey('passenger_info.id'), nullable=False)
     flight_details_id = Column(Integer, ForeignKey('flight_details.id'), nullable=False)
 
-    passenger_info = relationship("PassengerInfo", back_populates="reservations")
-    flight_details = relationship("FlightDetails", back_populates="reservations")
+    passenger_info = relationship("PassengerInfo", backref="reservations")
+    flight_details = relationship("FlightDetails", backref="reservations")

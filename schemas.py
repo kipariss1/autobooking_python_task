@@ -71,3 +71,17 @@ class Reservation(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ReservationOut(BaseModel):
+
+    id: int = Field(default=None)
+    passenger_info_id: int
+    flight_details_id: int
+    total_price: float = Field(..., gt=0, description="Total price of the reservation")
+    reservation_status: str = Field(..., pattern="^(confirmed|pending|cancelled)$", description="Status of the reservation")
+    creation_timestamp: datetime = Field(description="Timestamp when the reservation was created")
+    last_update_timestamp: datetime = Field(description="Timestamp when the reservation was last updated")
+
+    class Config:
+        from_attributes = True

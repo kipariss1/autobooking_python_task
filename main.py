@@ -1,24 +1,14 @@
 from fastapi import FastAPI, HTTPException, Depends
-from schemas import Reservation
-from typing import List
+import schemas
 import uvicorn
 from sqlalchemy.orm import Session
 import models
 from database import get_db
-from datetime import datetime
 
 app = FastAPI()
 
 
-reservations: List[Reservation] = []
-
-
-def update_id():
-    curr_id = len(reservations)
-    reservations[-1].id = curr_id
-
-
-def save_reservation(db: Session, reservation: Reservation, reservation_id: int = None):
+def save_reservation(db: Session, reservation: schemas.Reservation, reservation_id: int = None):
     if not reservation_id:  # POST
         existing_reservation = db.query(models.Reservation).join(models.FlightDetails).filter(
             models.Reservation.passenger_info_id == reservation.passenger_info.id,
@@ -59,52 +49,49 @@ def save_reservation(db: Session, reservation: Reservation, reservation_id: int 
         db.refresh(new_reservation.flight_details)
         db.refresh(new_reservation.passenger_info)
 
-        reservation.id = new_reservation.id
-        reservation.creation_timestamp = new_reservation.creation_timestamp
-        reservation.last_update_timestamp = new_reservation.last_update_timestamp
-
-        return reservation
+        return schemas.ReservationOut.model_validate(new_reservation)
     else:                   # PUT
-        for index, old_reservation in enumerate(reservations):
-            if old_reservation.id == reservation_id:
-                orig_creation_timestamp = reservations[index].creation_timestamp
-                reservation.id = reservation_id
-                reservation.creation_timestamp = orig_creation_timestamp
-                reservations[index] = reservation
-                return reservations[index]
-        raise HTTPException(status_code=404, detail="Reservation not found.")
+        pass
 
 
-@app.post("/reservations", response_model=Reservation)
-async def create_reservation(reservation: Reservation, db: Session = Depends(get_db)):
+@app.post("/reservations")
+async def create_reservation(reservation: schemas.Reservation, db: Session = Depends(get_db)):
     return save_reservation(db, reservation)
 
 
-@app.get("/reservations", response_model=List[Reservation])
-async def get_reservations():
-    return reservations
+@app.get("/reservations")
+async def get_reservations(db: Session = Depends(get_db)):
+    reservations = db.query(models.Reservation).all()
+    return [schemas.ReservationOut.model_validate(reservation) for reservation in reservations]
 
 
-@app.get("/reservations/{reservation_id}", response_model=Reservation)
-async def get_reservation_by_id(reservation_id: int):
-    for reservation in reservations:
-        if reservation.id == reservation_id:
-            return reservation
-    raise HTTPException(status_code=404, detail="Reservation not found.")
+@app.get("/reservations/{reservation_id}")
+async def get_reservation_by_id(reservation_id: int, db: Session = Depends(get_db)):
+    reservation = db.query(models.Reservation).filter(models.Reservation.id == reservation_id).first()
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reservation not found")
+    return schemas.ReservationOut.model_validate(reservation)
 
 
-@app.put("/reservations/{reservation_id}", response_model=Reservation)
-async def update_reservation(reservation_id: int, updated_reservation: Reservation, db: Session = Depends(get_db)):
+@app.put("/reservations/{reservation_id}")
+async def update_reservation(
+        reservation_id: int,
+        updated_reservation:
+        schemas.Reservation,
+        db: Session = Depends(get_db)
+):
     return save_reservation(db, updated_reservation, reservation_id)
 
 
 @app.delete("/reservations/{reservation_id}", response_model=dict)
-async def delete_reservation(reservation_id: int):
-    for index, reservation in enumerate(reservations):
-        if reservation.id == reservation_id:
-            reservations.pop(index)
-            return {"message": "Reservation deleted successfully."}
-    raise HTTPException(status_code=404, detail="Reservation not found.")
+async def delete_reservation(reservation_id: int, db: Session = Depends(get_db)):
+    reservation = db.query(models.Reservation).filter(models.Reservation.id == reservation_id).first()
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reservation not found")
+    db.delete(reservation)
+    db.commit()
+
+    return {"message": "Reservation deleted successfully"}
 
 
 if __name__ == '__main__':
