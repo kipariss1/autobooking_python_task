@@ -18,7 +18,6 @@ def update_id():
     reservations[-1].id = curr_id
 
 
-
 def save_reservation(db: Session, reservation: Reservation, reservation_id: int = None):
     if not reservation_id:  # POST
         existing_reservation = db.query(models.Reservation).join(models.FlightDetails).filter(
@@ -57,8 +56,14 @@ def save_reservation(db: Session, reservation: Reservation, reservation_id: int 
         db.add(new_reservation)
         db.commit()
         db.refresh(new_reservation)
+        db.refresh(new_reservation.flight_details)
+        db.refresh(new_reservation.passenger_info)
 
-        return new_reservation
+        reservation.id = new_reservation.id
+        reservation.creation_timestamp = new_reservation.creation_timestamp
+        reservation.last_update_timestamp = new_reservation.last_update_timestamp
+
+        return reservation
     else:                   # PUT
         for index, old_reservation in enumerate(reservations):
             if old_reservation.id == reservation_id:
