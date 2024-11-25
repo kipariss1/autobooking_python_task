@@ -95,6 +95,9 @@ def test__authorised_submit_the_reservation(reservation_passenger_kirill, test_d
     )
     res = json.loads(res.content)
     assert res['auth_user_id'] == mock_users.index({"username": "kirill", "password": "bXlwYXNz"}) + 1
+    assert res['passenger_info']['full_name'] == 'Kirill Rass'
+    assert res['total_price'] == 99.99
+    assert res["reservation_status"] == "confirmed"
 
 
 def test__assert_put_updated_the_reservation():
