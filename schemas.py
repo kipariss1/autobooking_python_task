@@ -60,6 +60,7 @@ class ReservationOut(BaseModel):
     id: int = Field(default=None)
     passenger_info_id: int
     flight_details_id: int
+    auth_user_id: int
     passenger_info: PassengerInfo = Field(...)
     flight_details: FlightDetails = Field(...)
     total_price: float = Field(..., gt=0, description="Total price of the reservation")

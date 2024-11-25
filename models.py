@@ -47,6 +47,7 @@ class Reservation(Base):
 
     passenger_info_id = Column(Integer, ForeignKey('passenger_info.id'), nullable=False)
     flight_details_id = Column(Integer, ForeignKey('flight_details.id'), nullable=False)
+    auth_user_id = Column(Integer, ForeignKey('auth_user.id'), nullable=False)
 
     passenger_info = relationship("PassengerInfo", backref="reservations")
     flight_details = relationship("FlightDetails", backref="reservations")

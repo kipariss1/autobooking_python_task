@@ -29,15 +29,18 @@ def get_auth_user_username(
         raise unauthorised_except
     if not credentials.password == user.decode_pass():
         raise unauthorised_except
-    return credentials.username
+    return {
+        'username': credentials.username,
+        'id': user.id
+    }
 
 
 @app.get("/basic-auth")
 def basic_authorise_user(
-    auth_username: str = Depends(get_auth_user_username)
+    auth_user: dict = Depends(get_auth_user_username)
 ):
     return {
-        "username": auth_username
+        "username": auth_user['username']
     }
 
 
@@ -57,7 +60,7 @@ def _check_and_create(model, model_attr: str, new_resrvtn, new_attr: str, new_at
 async def create_reservation(
         reservation: schemas.Reservation,
         db: Session = Depends(get_db),
-        auth_username: str = Depends(get_auth_user_username),
+        auth_user: dict = Depends(get_auth_user_username),
 ):
     existing_reservation = db.query(models.Reservation).join(models.FlightDetails).filter(
         models.Reservation.passenger_info_id == reservation.passenger_info.id,
@@ -74,7 +77,8 @@ async def create_reservation(
         total_price=reservation.total_price,
         reservation_status=reservation.reservation_status,
         passenger_info_id=passenger.id,
-        flight_details_id=flight.id
+        flight_details_id=flight.id,
+        auth_user_id=auth_user['id']
     )
     db.add(new_reservation)
     db.commit()
@@ -87,15 +91,24 @@ async def create_reservation(
 @app.get("/reservations")
 async def get_reservations(
         db: Session = Depends(get_db),
-        auth_username: str = Depends(get_auth_user_username),
+        auth_user: dict = Depends(get_auth_user_username),
 ):
-    reservations = db.query(models.Reservation).all()
+    reservations = db.query(models.Reservation).filter(
+        models.Reservation.auth_user_id == auth_user['id']
+    ).all()
     return [schemas.ReservationOut.model_validate(reservation) for reservation in reservations]
 
 
 @app.get("/reservations/{reservation_id}")
-async def get_reservation_by_id(reservation_id: int, db: Session = Depends(get_db)):
-    reservation = db.query(models.Reservation).filter(models.Reservation.id == reservation_id).first()
+async def get_reservation_by_id(
+        reservation_id: int,
+        db: Session = Depends(get_db),
+        auth_user: dict = Depends(get_auth_user_username),
+):
+    reservation = db.query(models.Reservation).filter(
+        models.Reservation.id == reservation_id,
+        models.Reservation.auth_user_id == auth_user['id']
+    ).first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")
     return schemas.ReservationOut.model_validate(reservation)
@@ -121,9 +134,12 @@ async def update_reservation(
         reservation_id: int,
         reservation: schemas.Reservation,
         db: Session = Depends(get_db),
-        auth_username: str = Depends(get_auth_user_username),
+        auth_user: dict = Depends(get_auth_user_username),
 ):
-    old_reservation = db.query(models.Reservation).filter(models.Reservation.id == reservation_id).first()
+    old_reservation = db.query(models.Reservation).filter(
+        models.Reservation.id == reservation_id,
+        models.Reservation.auth_user_id == auth_user['id']
+    ).first()
     if not old_reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")
     # Update PassengerInfo
@@ -137,7 +153,7 @@ async def update_reservation(
     for attr, value in reservation.model_dump().items():
         if attr not in ("passenger_info", "flight_details", "id"):
             setattr(old_reservation, attr, value)
-    # Update the timestamps
+    old_reservation.auth_user_id = auth_user['id']
     old_reservation.last_update_timestamp = datetime.now()
     try:
         db.commit()
