@@ -9,13 +9,14 @@ import models
 client = TestClient(app)
 
 
-@pytest.fixture(scope="function")
-def test_db():
+@pytest.fixture(scope="function", autouse=True)
+def test_db(monkeypatch):
     # Setup test database
     test_engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
-    Base.metadata.create_all(bind=test_engine)
     TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+    Base.metadata.create_all(bind=test_engine)
     db = TestSessionLocal()
+    monkeypatch.setattr('database.db', db)
     yield db
     db.close()
     Base.metadata.drop_all(bind=test_engine)
@@ -68,8 +69,13 @@ def test__unathorised(reservation_passenger_kirill):
     ).status_code == 401
 
 
-def test__authorised_submit_the_reservation(new_user, reservation_passenger_kirill):
-    pass
+def test__authorised_submit_the_reservation(clean_test_db, new_user, reservation_passenger_kirill):
+    res = client.post(
+        '/reservations',
+        json=reservation_passenger_kirill,
+        auth=(new_user.username, new_user.decode_pass())
+    )
+    assert res == reservation_passenger_kirill
 
 
 def test__assert_put_updated_the_reservation():
