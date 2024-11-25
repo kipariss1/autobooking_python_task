@@ -40,7 +40,7 @@ def insert_new_user(test_db):
 
 def test__unathorised():
     assert client.get('/reservations').status_code == 401
-    assert client.post('/reservations', content=schemas.Reservation(**{
+    assert client.post('/reservations', json={
       "passenger_info": {
         "id": 1,
         "full_name": "Kirill Rass",
@@ -60,6 +60,6 @@ def test__unathorised():
       "total_price": 99.99,
       "reservation_status": "confirmed"
     }
-    )).status_code == 401
+    ).status_code == 401
 
 
