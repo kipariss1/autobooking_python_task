@@ -59,6 +59,17 @@ All endpoints are accessable only with Basic Auth, so you need to use one of the
 
 E-mail notifications are sended to the dummy server: httpbin.org to simulate the request to the real E-Mail server. It is sended on the creation of the reservation and on update of the status of the reservation.
 
+**Postman**:
+
+To manually test API you will need to open with Postman the collection which is in the ./postman_collection
+
+**Tests**
+    
+To automatically test API you can run:
+
+    pytest /tests 
+from root dir
+
 ### TechStack
 - fastapi
 - sqlalchemy with sqlite
