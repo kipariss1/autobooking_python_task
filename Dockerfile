@@ -42,10 +42,10 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 USER appuser
 
 # Copy the source code into the container.
-COPY . .
+COPY . /app
 
 # Expose the port that the application listens on.
-EXPOSE 8080
+EXPOSE 8001
 
 # Run the application.
-CMD uvicorn main:app --reload --host 0.0.0.0 --port 8080
+CMD uvicorn main:app --reload --host 0.0.0.0 --port 8001
