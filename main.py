@@ -8,6 +8,7 @@ from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 from typing import Annotated
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from email_notify import notify_user
 
 app = FastAPI()
 
@@ -57,6 +58,7 @@ def _check_and_create(model, model_attr: str, new_resrvtn, new_attr: str, new_at
 
 
 @app.post("/reservations")
+@notify_user('created')
 async def create_reservation(
         reservation: schemas.Reservation,
         db: Session = Depends(get_db),
@@ -130,6 +132,7 @@ def _check_and_update(
 
 
 @app.put("/reservations/{reservation_id}")
+@notify_user('updated')
 async def update_reservation(
         reservation_id: int,
         reservation: schemas.Reservation,
