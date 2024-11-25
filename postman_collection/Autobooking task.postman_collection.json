@@ -1,0 +1,160 @@
+{
+	"info": {
+		"_postman_id": "83a330ba-dfbc-4220-87c7-71d5cf1cad52",
+		"name": "Autobooking task",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "27159904"
+	},
+	"item": [
+		{
+			"name": "Reservations",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": {
+						"username": "kirill",
+						"password": "mypass"
+					}
+				},
+				"method": "GET",
+				"header": [],
+				"url": "{{localhost_url}}/reservations"
+			},
+			"response": []
+		},
+		{
+			"name": "Reservation/id",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "{{localhost_url}}/reservations/{{reservation_get_id}}"
+			},
+			"response": []
+		},
+		{
+			"name": "Create reservation",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"passenger_info\": {\r\n    \"id\": 3,\r\n    \"full_name\": \"Clara Davis\",\r\n    \"email\": \"clara.davis@example.com\",\r\n    \"phone_number\": \"+12123334455\"\r\n  },\r\n  \"flight_details\": {\r\n    \"flight_number\": \"UA789\",\r\n    \"airline\": \"United Airlines\",\r\n    \"origin_airport\": \"SFO\",\r\n    \"destination_airport\": \"SEA\",\r\n    \"departure_datetime\": \"2024-12-15T09:00:00\",\r\n    \"arrival_datetime\": \"2024-12-15T11:15:00\",\r\n    \"seat_information\": \"22F\",\r\n    \"travel_class\": \"economy\"\r\n  },\r\n  \"total_price\": 99.99,\r\n  \"reservation_status\": \"confirmed\"\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "{{localhost_url}}/reservations"
+			},
+			"response": []
+		},
+		{
+			"name": "Update reservation",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": {
+						"username": "kirill",
+						"password": "mypass"
+					}
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"passenger_info\": {\r\n    \"id\": 1,\r\n    \"full_name\": \"Alex White\",\r\n    \"email\": \"kirill.rass@example.com\",\r\n    \"phone_number\": \"+12123334455\"\r\n  },\r\n  \"flight_details\": {\r\n    \"flight_number\": \"UA789\",\r\n    \"airline\": \"United Airlines\",\r\n    \"origin_airport\": \"SFO\",\r\n    \"destination_airport\": \"SEA\",\r\n    \"departure_datetime\": \"2024-12-15T09:00:00\",\r\n    \"arrival_datetime\": \"2024-12-15T11:15:00\",\r\n    \"seat_information\": \"22F\",\r\n    \"travel_class\": \"economy\"\r\n  },\r\n  \"total_price\": 99.99,\r\n  \"reservation_status\": \"confirmed\"\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "{{localhost_url}}/reservations/1"
+			},
+			"response": []
+		},
+		{
+			"name": "Delete reservation",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": {
+						"username": "kirill",
+						"password": "mypass"
+					}
+				},
+				"method": "DELETE",
+				"header": [],
+				"url": "{{localhost_url}}/reservations/1"
+			},
+			"response": []
+		},
+		{
+			"name": "basic-auth",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": {
+						"username": "kirill",
+						"password": "mypass"
+					}
+				},
+				"method": "GET",
+				"header": [],
+				"url": "{{localhost_url}}/basic-auth"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "localhost_url",
+			"value": "http://127.0.0.1:8000",
+			"type": "string"
+		},
+		{
+			"key": "reservation_get_id",
+			"value": "2",
+			"type": "string"
+		},
+		{
+			"key": "reservation_put_id",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "reservation_delete_id",
+			"value": "4",
+			"type": "string"
+		}
+	]
+}
