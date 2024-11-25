@@ -1,3 +1,5 @@
+import time
+from datetime import datetime
 import pytest
 from database import Base, get_db
 from sqlalchemy import create_engine
@@ -27,6 +29,7 @@ def override_get_db():
 
 @pytest.fixture(autouse=True)
 def test_db():
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
@@ -93,7 +96,6 @@ def test__unathorised(reservation_passenger_kirill, test_db, add_mock_users):
     assert client.put('/reservations/1', json=reservation_passenger_kirill).status_code == 401
     assert client.delete('/reservations/1').status_code == 401
 
-
 def test__authorised_submit_the_reservation(reservation_passenger_kirill, test_db, add_mock_users, mock_users):
     res = client.post(
         '/reservations',
@@ -117,13 +119,25 @@ def test__assert_put_updated_the_reservation(reservation_passenger_kirill, test_
     id = res['id']
     updated_reservation = reservation_passenger_kirill
     updated_reservation['passenger_info']['full_name'] = 'Alex Smith'
+    time.sleep(2)
     res_upd = client.put(
         f'/reservations/{id}',
         json=updated_reservation,
         auth=('kirill', 'mypass')
     )
-    res_upd = json.loads(res_upd)
-    assert res_upd == {}
+    res_upd = json.loads(res_upd.content)
+    assert res_upd['id'] == id
+    assert res_upd['passenger_info']['full_name'] == 'Alex Smith'
+    assert datetime.fromisoformat(res_upd['creation_timestamp']) == datetime.fromisoformat(res['creation_timestamp'])
+    assert datetime.fromisoformat(res_upd['last_update_timestamp']) > datetime.fromisoformat(res_upd['creation_timestamp'])
+
+
+def test__assert_reservation_already_created():
+    pass
+
+
+def test__assert_authorisation_on_put():
+    pass
 
 
 def test__assert_autorization_on_get():

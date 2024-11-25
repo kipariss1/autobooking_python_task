@@ -164,7 +164,7 @@ async def update_reservation(
         db.rollback()
         raise HTTPException(status_code=400, detail="Failed to update reservation: integrity error")
     db.refresh(old_reservation)
-    return schemas.Reservation.model_validate(old_reservation)
+    return schemas.ReservationOut.model_validate(old_reservation)
 
 
 @app.delete("/reservations/{reservation_id}", response_model=dict)
