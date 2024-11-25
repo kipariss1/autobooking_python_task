@@ -1,6 +1,7 @@
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
 from datetime import datetime
+import base64
 
 
 Base = declarative_base()
@@ -60,3 +61,6 @@ class AuthUser(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
+
+    def decode_pass(self):
+        return base64.b64decode(self.password.encode('utf-8')).decode('utf-8')

@@ -28,7 +28,7 @@ def get_auth_user_username(
     user = db.query(models.AuthUser).filter(models.AuthUser.username == credentials.username).first()
     if not user:
         raise unauthorised_except
-    if not credentials.password == base64.b64decode(user.password.encode('utf-8')).decode('utf-8'):
+    if not credentials.password == user.decode_pass():
         raise unauthorised_except
     return credentials.username
 
