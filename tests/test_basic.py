@@ -100,7 +100,7 @@ def test__authorised_submit_the_reservation(reservation_passenger_kirill, test_d
     assert res["reservation_status"] == "confirmed"
 
 
-def test__assert_put_updated_the_reservation():
+def test__assert_put_updated_the_reservation(reservation_passenger_kirill, test_db, add_mock_users, mock_users):
     # TODO: make second tests
     pass
 
