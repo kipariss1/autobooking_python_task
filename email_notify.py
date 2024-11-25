@@ -12,7 +12,7 @@ async def send_notification(email: str, message: str):
         "message": message
     }
     async with httpx.AsyncClient() as client:
-        response = await client.post(mock_url, json=payload)
+        response = await client.post(mock_url, json=payload, timeout=120)
         if response.status_code != 200:
             raise HTTPException(
                 status_code=500,
