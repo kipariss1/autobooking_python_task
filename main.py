@@ -8,7 +8,6 @@ from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 from typing import Annotated
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-import base64
 
 app = FastAPI()
 
