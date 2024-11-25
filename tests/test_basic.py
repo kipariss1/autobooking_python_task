@@ -1,41 +1,59 @@
 import pytest
-from database import Base
+from database import Base, get_db
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 from main import app
+import json
 import models
+
+
+SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+def override_get_db():
+    try:
+        db = TestingSessionLocal()
+        Base.metadata.create_all(bind=db.bind)
+        yield db
+    finally:
+        db.close()
+
+
+@pytest.fixture(autouse=True)
+def test_db():
+    Base.metadata.create_all(bind=engine)
+    yield
+    Base.metadata.drop_all(bind=engine)
+
+
+app.dependency_overrides[get_db] = override_get_db
 
 client = TestClient(app)
 
 
-@pytest.fixture(scope="function", autouse=True)
-def test_db(monkeypatch):
-    # Setup test database
-    test_engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
-    TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
-    Base.metadata.create_all(bind=test_engine)
-    db = TestSessionLocal()
-    monkeypatch.setattr('database.db', db)
-    yield db
-    db.close()
-    Base.metadata.drop_all(bind=test_engine)
+@pytest.fixture
+def mock_users():
+    return [
+        {"username": "admin", "password": "YWRtaW4="},
+        {"username": "kirill", "password": "bXlwYXNz"},
+        {"username": "claradavis", "password": "bXlwYXNz"}
+    ]
 
-
-@pytest.fixture(autouse=True)
-def clean_test_db(test_db):
-    # Truncate tables or reset DB state
-    for table in reversed(Base.metadata.sorted_tables):
-        test_db.execute(table.delete())
-    test_db.commit()
 
 @pytest.fixture
-def new_user(test_db):
-    new_user = models.AuthUser(username="claradavis", password="bXlwYXNz")
-    test_db.add(new_user)
-    test_db.commit()
-    test_db.refresh(new_user)
-    return new_user
+def add_mock_users(mock_users):
+    db = next(override_get_db())
+    for user_data in mock_users:
+        user = models.AuthUser(username=user_data["username"], password=user_data["password"])
+        db.add(user)
+    db.commit()
+
 
 @pytest.fixture
 def reservation_passenger_kirill():
@@ -61,7 +79,7 @@ def reservation_passenger_kirill():
     }
 
 
-def test__unathorised(reservation_passenger_kirill):
+def test__unathorised(reservation_passenger_kirill, test_db, add_mock_users):
     assert client.get('/reservations').status_code == 401
     assert client.post(
         '/reservations',
@@ -69,16 +87,18 @@ def test__unathorised(reservation_passenger_kirill):
     ).status_code == 401
 
 
-def test__authorised_submit_the_reservation(clean_test_db, new_user, reservation_passenger_kirill):
+def test__authorised_submit_the_reservation(reservation_passenger_kirill, test_db, add_mock_users, mock_users):
     res = client.post(
         '/reservations',
         json=reservation_passenger_kirill,
-        auth=(new_user.username, new_user.decode_pass())
+        auth=('kirill', 'mypass')
     )
-    assert res == reservation_passenger_kirill
+    res = json.loads(res.content)
+    assert res['auth_user_id'] == mock_users.index({"username": "kirill", "password": "bXlwYXNz"}) + 1
 
 
 def test__assert_put_updated_the_reservation():
+    # TODO: make second tests
     pass
 
 
