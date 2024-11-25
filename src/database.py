@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker, Session
-from models import Base
+from src.models import Base
 
 
 DB_URL = "sqlite:///./local.db"

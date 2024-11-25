@@ -1,11 +1,11 @@
 import pytest
-from database import Base, get_db
+from src.database import Base, get_db
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 from main import app
 from unittest.mock import AsyncMock, call, patch
-import models
+from src import models
 from copy import deepcopy
 
 
@@ -107,7 +107,7 @@ def reservation_passenger_claradavis():
 
 def test__email_send_on_creation(reservation_passenger_kirill, test_db, add_mock_users, mock_users, monkeypatch):
     mock_send_notification = AsyncMock()
-    with patch('email_notify.send_notification', mock_send_notification):
+    with patch('src.email_notify.send_notification', mock_send_notification):
         assert client.post(
             '/reservations',
             json=reservation_passenger_kirill,
@@ -120,7 +120,7 @@ def test__email_send_on_creation(reservation_passenger_kirill, test_db, add_mock
 
 def test__email_send_on_update_status(reservation_passenger_kirill, test_db, add_mock_users, mock_users, monkeypatch):
     mock_send_notification = AsyncMock()
-    with patch('email_notify.send_notification', mock_send_notification):
+    with patch('src.email_notify.send_notification', mock_send_notification):
         assert client.post(
             '/reservations',
             json=reservation_passenger_kirill,
@@ -143,7 +143,7 @@ def test__email_send_on_update_status(reservation_passenger_kirill, test_db, add
 
 def test__email_not_send_on_regular_update(reservation_passenger_kirill, test_db, add_mock_users, mock_users, monkeypatch):
     mock_send_notification = AsyncMock()
-    with patch('email_notify.send_notification', mock_send_notification):
+    with patch('src.email_notify.send_notification', mock_send_notification):
         assert client.post(
             '/reservations',
             json=reservation_passenger_kirill,

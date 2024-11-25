@@ -1,14 +1,14 @@
 import time
 from datetime import datetime
 import pytest
-from database import Base, get_db
+from src.database import Base, get_db
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 from main import app
 import json
-from unittest.mock import patch, AsyncMock
-import models
+from unittest.mock import AsyncMock
+from src import models
 from copy import deepcopy
 
 
@@ -32,7 +32,7 @@ def override_get_db():
 @pytest.fixture(autouse=True)
 def mock_send_notifications(monkeypatch):
     mock_send_notifications = AsyncMock()
-    monkeypatch.setattr('email_notify.send_notification', mock_send_notifications)
+    monkeypatch.setattr('src.email_notify.send_notification', mock_send_notifications)
     yield
     mock_send_notifications.reset_mock()
 

@@ -1,14 +1,13 @@
 from fastapi import FastAPI, HTTPException, Depends, status
-import schemas
 import uvicorn
 from sqlalchemy.orm import Session
-import models
-from database import get_db
+from src import models, schemas
+from src.database import get_db
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 from typing import Annotated
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from email_notify import notify_user
+from src.email_notify import notify_user
 
 app = FastAPI()
 
