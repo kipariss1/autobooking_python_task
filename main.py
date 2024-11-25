@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, status
 import schemas
 import uvicorn
 from sqlalchemy.orm import Session
@@ -6,8 +6,40 @@ import models
 from database import get_db
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
+from typing import Annotated
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+import base64
 
 app = FastAPI()
+
+
+security = HTTPBasic()
+
+
+def get_auth_user_username(
+    credentials: Annotated[HTTPBasicCredentials, Depends(security)],
+    db: Session = Depends(get_db)
+):
+    unauthorised_except = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid username or password",
+        headers={"WWW-Authenticate": "Basic"}
+    )
+    user = db.query(models.AuthUser).filter(models.AuthUser.username == credentials.username).first()
+    if not user:
+        raise unauthorised_except
+    if not credentials.password == base64.b64decode(user.password.encode('utf-8')).decode('utf-8'):
+        raise unauthorised_except
+    return credentials.username
+
+
+@app.get("/basic-auth")
+def basic_authorise_user(
+    auth_username: str = Depends(get_auth_user_username)
+):
+    return {
+        "username": auth_username
+    }
 
 
 def _check_and_create(model, model_attr: str, new_resrvtn, new_attr: str, new_attr_id: str, db: Session):
@@ -23,7 +55,11 @@ def _check_and_create(model, model_attr: str, new_resrvtn, new_attr: str, new_at
 
 
 @app.post("/reservations")
-async def create_reservation(reservation: schemas.Reservation, db: Session = Depends(get_db)):
+async def create_reservation(
+        reservation: schemas.Reservation,
+        db: Session = Depends(get_db),
+        auth_username: str = Depends(get_auth_user_username),
+):
     existing_reservation = db.query(models.Reservation).join(models.FlightDetails).filter(
         models.Reservation.passenger_info_id == reservation.passenger_info.id,
         models.FlightDetails.flight_number == reservation.flight_details.flight_number
@@ -50,7 +86,10 @@ async def create_reservation(reservation: schemas.Reservation, db: Session = Dep
 
 
 @app.get("/reservations")
-async def get_reservations(db: Session = Depends(get_db)):
+async def get_reservations(
+        db: Session = Depends(get_db),
+        auth_username: str = Depends(get_auth_user_username),
+):
     reservations = db.query(models.Reservation).all()
     return [schemas.ReservationOut.model_validate(reservation) for reservation in reservations]
 
@@ -82,7 +121,8 @@ def _check_and_update(
 async def update_reservation(
         reservation_id: int,
         reservation: schemas.Reservation,
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        auth_username: str = Depends(get_auth_user_username),
 ):
     old_reservation = db.query(models.Reservation).filter(models.Reservation.id == reservation_id).first()
     if not old_reservation:
@@ -110,7 +150,11 @@ async def update_reservation(
 
 
 @app.delete("/reservations/{reservation_id}", response_model=dict)
-async def delete_reservation(reservation_id: int, db: Session = Depends(get_db)):
+async def delete_reservation(
+        reservation_id: int,
+        db: Session = Depends(get_db),
+        auth_username: str = Depends(get_auth_user_username),
+):
     reservation = db.query(models.Reservation).filter(models.Reservation.id == reservation_id).first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")

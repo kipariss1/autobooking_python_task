@@ -52,3 +52,11 @@ class Reservation(Base):
 
     def __str__(self):
         return self.__tablename__
+
+
+class AuthUser(Base):
+    __tablename__ = "auth_user"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String, unique=True, nullable=False)
+    password = Column(String, nullable=False)
