@@ -24,7 +24,7 @@ def notify_user(action: str):
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
-            result = await func(*args, **kwargs)
+            result, send_notification_flag = await func(*args, **kwargs)
             reservation = result
             email = reservation.passenger_info.email
             message = (
@@ -32,10 +32,8 @@ def notify_user(action: str):
                 f"Details: Flight {reservation.flight_details.flight_number}, "
                 f"Status: {reservation.reservation_status}."
             )
-            await send_notification(email, message)
-
+            if send_notification_flag:
+                await send_notification(email, message)
             return result
-
         return wrapper
-
     return decorator

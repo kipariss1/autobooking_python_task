@@ -87,7 +87,7 @@ async def create_reservation(
     db.refresh(new_reservation)
     db.refresh(new_reservation.flight_details)
     db.refresh(new_reservation.passenger_info)
-    return schemas.ReservationOut.model_validate(new_reservation)
+    return schemas.ReservationOut.model_validate(new_reservation), True
 
 
 @app.get("/reservations")
@@ -152,6 +152,7 @@ async def update_reservation(
     _check_and_update(
         models.FlightDetails, 'id', old_reservation, 'flight_details_id', reservation, 'flight_details', db
     )
+    old_status = old_reservation.reservation_status
     # Update Reservation fields
     for attr, value in reservation.model_dump().items():
         if attr not in ("passenger_info", "flight_details", "id"):
@@ -164,7 +165,7 @@ async def update_reservation(
         db.rollback()
         raise HTTPException(status_code=400, detail="Failed to update reservation: integrity error")
     db.refresh(old_reservation)
-    return schemas.ReservationOut.model_validate(old_reservation)
+    return schemas.ReservationOut.model_validate(old_reservation), old_reservation.reservation_status != old_status
 
 
 @app.delete("/reservations/{reservation_id}", response_model=dict)

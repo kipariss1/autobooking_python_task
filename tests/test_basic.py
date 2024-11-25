@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 from main import app
 import json
+from unittest.mock import patch, AsyncMock
 import models
 from copy import deepcopy
 
@@ -26,6 +27,14 @@ def override_get_db():
         yield db
     finally:
         db.close()
+
+
+@pytest.fixture(autouse=True)
+def mock_send_notifications(monkeypatch):
+    mock_send_notifications = AsyncMock()
+    monkeypatch.setattr('email_notify.send_notification', mock_send_notifications)
+    yield
+    mock_send_notifications.reset_mock()
 
 
 @pytest.fixture(autouse=True)

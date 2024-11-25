@@ -2,4 +2,6 @@
 .idea/
 **/__pycache__/
 **/.pytest_cache/
+tests/local.db
+tests/test.db
 **/test.db
