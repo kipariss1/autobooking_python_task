@@ -4,7 +4,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 from main import app
-import schemas
 import models
 
 client = TestClient(app)
@@ -30,17 +29,16 @@ def clean_test_db(test_db):
     test_db.commit()
 
 @pytest.fixture
-def insert_new_user(test_db):
+def new_user(test_db):
     new_user = models.AuthUser(username="claradavis", password="bXlwYXNz")
     test_db.add(new_user)
     test_db.commit()
     test_db.refresh(new_user)
     return new_user
 
-
-def test__unathorised():
-    assert client.get('/reservations').status_code == 401
-    assert client.post('/reservations', json={
+@pytest.fixture
+def reservation_passenger_kirill():
+    return {
       "passenger_info": {
         "id": 1,
         "full_name": "Kirill Rass",
@@ -60,6 +58,21 @@ def test__unathorised():
       "total_price": 99.99,
       "reservation_status": "confirmed"
     }
+
+
+def test__unathorised(reservation_passenger_kirill):
+    assert client.get('/reservations').status_code == 401
+    assert client.post(
+        '/reservations',
+        json=reservation_passenger_kirill
     ).status_code == 401
+
+
+def test__authorised_submit_the_reservation(new_user, reservation_passenger_kirill):
+    pass
+
+
+def test__assert_put_updated_the_reservation():
+    pass
 
 
