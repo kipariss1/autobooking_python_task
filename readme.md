@@ -63,3 +63,4 @@ E-mail notifications are sended to the dummy server: httpbin.org to simulate the
 - fastapi
 - sqlalchemy with sqlite
 - uvicorn as a server
+- docker for containerisation
