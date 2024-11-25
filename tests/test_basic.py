@@ -85,6 +85,13 @@ def test__unathorised(reservation_passenger_kirill, test_db, add_mock_users):
         '/reservations',
         json=reservation_passenger_kirill
     ).status_code == 401
+    client.post(
+        '/reservations',
+        json=reservation_passenger_kirill,
+        auth=('kirill', 'mypass')
+    )
+    assert client.put('/reservations/1', json=reservation_passenger_kirill).status_code == 401
+    assert client.delete('/reservations/1').status_code == 401
 
 
 def test__authorised_submit_the_reservation(reservation_passenger_kirill, test_db, add_mock_users, mock_users):
@@ -101,7 +108,29 @@ def test__authorised_submit_the_reservation(reservation_passenger_kirill, test_d
 
 
 def test__assert_put_updated_the_reservation(reservation_passenger_kirill, test_db, add_mock_users, mock_users):
-    # TODO: make second tests
+    res = client.post(
+        '/reservations',
+        json=reservation_passenger_kirill,
+        auth=('kirill', 'mypass')
+    )
+    res = json.loads(res.content)
+    id = res['id']
+    updated_reservation = reservation_passenger_kirill
+    updated_reservation['passenger_info']['full_name'] = 'Alex Smith'
+    res_upd = client.put(
+        f'/reservations/{id}',
+        json=updated_reservation,
+        auth=('kirill', 'mypass')
+    )
+    res_upd = json.loads(res_upd)
+    assert res_upd == {}
+
+
+def test__assert_autorization_on_get():
+    pass
+
+
+def test__assert_authorization_on_delete():
     pass
 
 

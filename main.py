@@ -171,9 +171,12 @@ async def update_reservation(
 async def delete_reservation(
         reservation_id: int,
         db: Session = Depends(get_db),
-        auth_username: str = Depends(get_auth_user_username),
+        auth_user: str = Depends(get_auth_user_username),
 ):
-    reservation = db.query(models.Reservation).filter(models.Reservation.id == reservation_id).first()
+    reservation = db.query(models.Reservation).filter(
+        models.Reservation.id == reservation_id,
+        models.Reservation.auth_user_id == auth_user['id']
+    ).first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")
     db.delete(reservation)
