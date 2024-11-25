@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from main import app
 import json
 import models
+from copy import deepcopy
 
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
@@ -82,6 +83,30 @@ def reservation_passenger_kirill():
     }
 
 
+@pytest.fixture
+def reservation_passenger_claradavis():
+    return {
+      "passenger_info": {
+        "id": 1,
+        "full_name": "Clara Davis",
+        "email": "clara.davis@example.com",
+        "phone_number": "+12123334456"
+      },
+      "flight_details": {
+        "flight_number": "UA799",
+        "airline": "United Airlines",
+        "origin_airport": "SFA",
+        "destination_airport": "EEA",
+        "departure_datetime": "2024-12-15T09:00:00",
+        "arrival_datetime": "2024-12-15T11:15:00",
+        "seat_information": "22F",
+        "travel_class": "economy"
+      },
+      "total_price": 199.99,
+      "reservation_status": "confirmed"
+    }
+
+
 def test__unathorised(reservation_passenger_kirill, test_db, add_mock_users):
     assert client.get('/reservations').status_code == 401
     assert client.post(
@@ -117,7 +142,7 @@ def test__assert_put_updated_the_reservation(reservation_passenger_kirill, test_
     )
     res = json.loads(res.content)
     id = res['id']
-    updated_reservation = reservation_passenger_kirill
+    updated_reservation = deepcopy(reservation_passenger_kirill)
     updated_reservation['passenger_info']['full_name'] = 'Alex Smith'
     time.sleep(2)
     res_upd = client.put(
@@ -129,22 +154,85 @@ def test__assert_put_updated_the_reservation(reservation_passenger_kirill, test_
     assert res_upd['id'] == id
     assert res_upd['passenger_info']['full_name'] == 'Alex Smith'
     assert datetime.fromisoformat(res_upd['creation_timestamp']) == datetime.fromisoformat(res['creation_timestamp'])
-    assert datetime.fromisoformat(res_upd['last_update_timestamp']) > datetime.fromisoformat(res_upd['creation_timestamp'])
+    assert datetime.fromisoformat(res_upd['last_update_timestamp']) \
+           > datetime.fromisoformat(res_upd['creation_timestamp'])
 
 
-def test__assert_reservation_already_created():
-    pass
+def test__assert_reservation_already_created(reservation_passenger_kirill, test_db, add_mock_users, mock_users):
+    res = client.post(
+        '/reservations',
+        json=reservation_passenger_kirill,
+        auth=('kirill', 'mypass')
+    )
+    assert client.post(
+        '/reservations',
+        json=reservation_passenger_kirill,
+        auth=('claradavis', 'mypass')
+    ).status_code == 400
 
 
-def test__assert_authorisation_on_put():
-    pass
+def test__assert_authorisation_on_put(reservation_passenger_kirill, test_db, add_mock_users, mock_users):
+    res = client.post(
+        '/reservations',
+        json=reservation_passenger_kirill,
+        auth=('kirill', 'mypass')
+    )
+    res = json.loads(res.content)
+    id = res['id']
+    updated_reservation = deepcopy(reservation_passenger_kirill)
+    updated_reservation['passenger_info']['full_name'] = 'Alex Smith'
+    time.sleep(2)
+    assert client.put(
+        f'/reservations/{id}',
+        json=updated_reservation,
+        auth=('claradavis', 'mypass')
+    ).status_code == 404
 
 
-def test__assert_autorization_on_get():
-    pass
+def test__assert_autorization_on_get(
+        reservation_passenger_kirill, reservation_passenger_claradavis, test_db, add_mock_users, mock_users
+):
+    assert client.post(
+        '/reservations',
+        json=reservation_passenger_kirill,
+        auth=('kirill', 'mypass')
+    ).status_code == 200
+
+    assert client.post(
+        '/reservations',
+        json=reservation_passenger_claradavis,
+        auth=('claradavis', 'mypass')
+    ).status_code == 200
+
+    assert len(json.loads(client.get('/reservations', auth=('kirill', 'mypass')).content)) == 1
+    assert len(json.loads(client.get('/reservations', auth=('claradavis', 'mypass')).content)) == 1
+    assert client.get('/reservations/1', auth=('kirill', 'mypass')).status_code == 200
+    assert client.get('/reservations/2', auth=('kirill', 'mypass')).status_code == 404
+    assert client.get('/reservations/1', auth=('claradavis', 'mypass')).status_code == 404
+    assert client.get('/reservations/2', auth=('claradavis', 'mypass')).status_code == 200
 
 
-def test__assert_authorization_on_delete():
-    pass
+def test__assert_authorization_on_delete(
+        reservation_passenger_kirill, reservation_passenger_claradavis, test_db, add_mock_users, mock_users
+):
+    assert client.post(
+        '/reservations',
+        json=reservation_passenger_kirill,
+        auth=('kirill', 'mypass')
+    ).status_code == 200
+
+    assert client.post(
+        '/reservations',
+        json=reservation_passenger_claradavis,
+        auth=('claradavis', 'mypass')
+    ).status_code == 200
+
+    assert client.delete('/reservations/1', auth=('kirill', 'mypass')).status_code == 200
+    assert client.delete('/reservations/2', auth=('kirill', 'mypass')).status_code == 404
+    assert client.delete('/reservations/1', auth=('claradavis', 'mypass')).status_code == 404
+    assert client.delete('/reservations/2', auth=('claradavis', 'mypass')).status_code == 200
+
+    assert len(json.loads(client.get('/reservations', auth=('kirill', 'mypass')).content)) == 0
+    assert len(json.loads(client.get('/reservations', auth=('claradavis', 'mypass')).content)) == 0
 
 
